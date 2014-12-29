@@ -12,7 +12,7 @@ func main() {
 	signUp := web.New()
 	goji.Handle("/signup/*", signUp)
 	signUp.Use(middleware.SubRouter)
-	var signUpController controllers.SignUpController = controllers.SignUpController{}
+	var signUpController controllers.SignUpController
 	signUp.Get("/:hashKey", signUpController.ShowSignupPage)
 	signUp.Post("/execute", signUpController.SignUp)
 	signUp.Get("/complete", signUpController.ShowCompletePage)

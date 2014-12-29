@@ -1,23 +1,19 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/flosch/pongo2"
-	"github.com/mavricknz/ldap"
 	"github.com/zenazn/goji/web"
 
-	"github.com/learnin/goji-invited-user-signup-example/helpers"
+	"github.com/learnin/goji-invited-user-signup-example/models"
 )
-
-const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
 
 type SignUpController struct {
 }
 
-type Form struct {
+type UserForm struct {
 	HashKey         string
 	Msg             string
 	UserId          string
@@ -31,13 +27,25 @@ type Form struct {
 var signupTpl = pongo2.Must(pongo2.FromFile("views/signup.tpl"))
 var completeTpl = pongo2.Must(pongo2.FromFile("views/complete.tpl"))
 
+func request2UserForm(r *http.Request) UserForm {
+	var form UserForm
+	form.UserId = r.FormValue("userId")
+	form.Password = r.FormValue("password")
+	form.ConfirmPassword = r.FormValue("confirmPassword")
+	form.LastName = r.FormValue("lastName")
+	form.FirstName = r.FormValue("firstName")
+	form.Mail = r.FormValue("mail")
+	form.HashKey = r.FormValue("hashKey")
+	return form
+}
+
 func (controller *SignUpController) ShowSignupPage(c web.C, w http.ResponseWriter, r *http.Request) {
 	hashKey := c.URLParams["hashKey"]
 	if hashKey == "" {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
-	var form Form
+	var form UserForm
 	form.HashKey = hashKey
 	controller.renderSignupPage(c, w, r, form)
 }
@@ -50,7 +58,7 @@ func (controller *SignUpController) ShowCompletePage(c web.C, w http.ResponseWri
 	}
 }
 
-func (controller *SignUpController) renderSignupPage(c web.C, w http.ResponseWriter, r *http.Request, form Form) {
+func (controller *SignUpController) renderSignupPage(c web.C, w http.ResponseWriter, r *http.Request, form UserForm) {
 	err := signupTpl.ExecuteWriter(pongo2.Context{"form": form}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,145 +66,58 @@ func (controller *SignUpController) renderSignupPage(c web.C, w http.ResponseWri
 	}
 }
 
+func (controller *SignUpController) userForm2User(form UserForm) models.User {
+	var user models.User
+	user.UserId = form.UserId
+	user.Password = form.Password
+	user.LastName = form.LastName
+	user.FirstName = form.FirstName
+	user.Mail = form.Mail
+	user.HashKey = form.HashKey
+	return user
+}
+
 func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *http.Request) {
-	var form Form
-	form.UserId = r.FormValue("userId")
-	form.Password = r.FormValue("password")
-	form.ConfirmPassword = r.FormValue("confirmPassword")
-	form.LastName = r.FormValue("lastName")
-	form.FirstName = r.FormValue("firstName")
-	form.Mail = r.FormValue("mail")
-	form.HashKey = r.FormValue("hashKey")
+	form := request2UserForm(r)
 	if form.HashKey == "" {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
-	if !controller.validate(&form) {
-		form.Msg = strings.Replace(form.Msg, "\n", "<br/>", -1)
+	user := controller.userForm2User(form)
+	if ok, msg := controller.validate(form, user); !ok {
+		msg = strings.Replace(msg, "\n", "<br/>", -1)
+		form.Msg = msg
 		controller.renderSignupPage(c, w, r, form)
 		return
 	}
-	fmt.Println(helpers.Hash(form.UserId, SALT))
-	if helpers.Hash(form.UserId, SALT) != form.HashKey {
+	if !user.ValidateHashKey() {
 		form.Msg = "ユーザーIDを正しく入力してください。"
 		controller.renderSignupPage(c, w, r, form)
 		return
 	}
-	alreadyExist, err := controller.existsUser()
+	err := user.AddUser()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if alreadyExist {
-		form.Msg = "そのユーザーはすでに登録されています。"
-		controller.renderSignupPage(c, w, r, form)
+		switch err.(type) {
+		case models.AlreadyExistError:
+			form.Msg = "そのユーザーはすでに登録されています。"
+			controller.renderSignupPage(c, w, r, form)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 	http.Redirect(w, r, "/signup/complete", http.StatusFound)
 }
 
-func (controller *SignUpController) addUser(l *ldap.LDAPConnection) error {
-	dn := "cn=test3,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
-	var addAttrs []ldap.EntryAttribute = []ldap.EntryAttribute{
-		ldap.EntryAttribute{
-			Name: "objectclass",
-			Values: []string{
-				"person", "inetOrgPerson", "organizationalPerson", "top",
-			},
-		},
-		ldap.EntryAttribute{
-			Name: "uid",
-			Values: []string{
-				"test3",
-			},
-		},
-		ldap.EntryAttribute{
-			Name: "cn",
-			Values: []string{
-				"test3",
-			},
-		},
-		ldap.EntryAttribute{
-			Name: "givenName",
-			Values: []string{
-				"test3gn",
-			},
-		},
-		ldap.EntryAttribute{
-			Name: "sn",
-			Values: []string{
-				"test3sn",
-			},
-		},
-	}
-	addReq := ldap.NewAddRequest(dn)
-	for _, attr := range addAttrs {
-		addReq.AddAttribute(&attr)
-	}
-	fmt.Print(addReq)
-	err := l.Add(addReq)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (controller *SignUpController) existsUser() (bool, error) {
-	ldapServer := "ipa.demo1.freeipa.org"
-	l := ldap.NewLDAPConnection(ldapServer, 389)
-	err := l.Connect()
-	if err != nil {
-		return false, err
-	}
-	defer l.Close()
-	err = l.Bind("uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org", "Secret123")
-	if err != nil {
-		return false, err
-	}
-	baseDN := "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
-	var filter []string = []string{"(uid=test3)"}
-	var attributes []string = []string{
-		"uid", "givenname"}
-	searchRequest := ldap.NewSearchRequest(
-		baseDN,
-		ldap.ScopeWholeSubtree, ldap.DerefAlways, 0, 0, false,
-		filter[0],
-		attributes,
-		nil)
-	sr, err := l.Search(searchRequest)
-	if err != nil {
-		return false, err
-	}
-	if len(sr.Entries) == 0 {
-		return false, controller.addUser(l)
-	}
-	return true, nil
-}
-
-func (controller *SignUpController) validate(form *Form) bool {
-	if form.UserId == "" {
-		form.Msg += "ユーザーIDを入力してください。\n"
-	}
-	if form.Password == "" {
-		form.Msg += "パスワードを入力してください。\n"
-	}
+func (controller *SignUpController) validate(form UserForm, user models.User) (bool, string) {
+	_, msg := user.Validate()
 	if form.ConfirmPassword == "" {
-		form.Msg += "パスワード(確認)を入力してください。\n"
+		msg += "パスワード(確認)を入力してください。\n"
+	} else if form.Password != "" && form.Password != form.ConfirmPassword {
+		msg += "パスワードとパスワード(確認)が一致していません。\n"
 	}
-	if form.LastName == "" {
-		form.Msg += "姓を入力してください。\n"
+	if msg != "" {
+		return false, msg
 	}
-	if form.FirstName == "" {
-		form.Msg += "名を入力してください。\n"
-	}
-	if form.Mail == "" {
-		form.Msg += "メールアドレスを入力してください。\n"
-	}
-	if form.Password != form.ConfirmPassword {
-		form.Msg += "パスワードとパスワード(確認)が一致していません。\n"
-	}
-	if form.Msg != "" {
-		return false
-	}
-	return true
+	return true, ""
 }
