@@ -1,17 +1,18 @@
 package controllers
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
 	"github.com/flosch/pongo2"
 	"github.com/mavricknz/ldap"
 	"github.com/zenazn/goji/web"
+
+	"github.com/learnin/goji-invited-user-signup-example/helpers"
 )
+
+const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
 
 type SignUpController struct {
 }
@@ -75,8 +76,8 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 		controller.renderSignupPage(c, w, r, form)
 		return
 	}
-	fmt.Println(controller.hash(form.UserId))
-	if controller.hash(form.UserId) != form.HashKey {
+	fmt.Println(helpers.Hash(form.UserId, SALT))
+	if helpers.Hash(form.UserId, SALT) != form.HashKey {
 		form.Msg = "ユーザーIDを正しく入力してください。"
 		controller.renderSignupPage(c, w, r, form)
 		return
@@ -198,11 +199,4 @@ func (controller *SignUpController) validate(form *Form) bool {
 		return false
 	}
 	return true
-}
-
-func (controller *SignUpController) hash(s string) string {
-	const salt = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
-	hash := sha256.New()
-	io.WriteString(hash, s+salt)
-	return hex.EncodeToString(hash.Sum(nil))
 }
