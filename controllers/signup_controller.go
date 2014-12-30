@@ -7,10 +7,12 @@ import (
 	"github.com/flosch/pongo2"
 	"github.com/zenazn/goji/web"
 
+	"github.com/learnin/goji-invited-user-signup-example/helpers"
 	"github.com/learnin/goji-invited-user-signup-example/models"
 )
 
 type SignUpController struct {
+	DS *helpers.DataSource
 }
 
 type UserForm struct {
@@ -77,6 +79,17 @@ func (controller *SignUpController) userForm2User(form UserForm) models.User {
 	return user
 }
 
+func (controller *SignUpController) findInviteUserByUserId(userId string) (*models.InviteUser, error) {
+	var inviteUser models.InviteUser
+	if d := controller.DS.GetDB().Where(&models.InviteUser{UserId: userId}).First(&inviteUser); d.Error != nil {
+		if d.RecordNotFound() {
+			return nil, nil
+		}
+		return nil, d.Error
+	}
+	return &inviteUser, nil
+}
+
 func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *http.Request) {
 	form := request2UserForm(r)
 	if form.HashKey == "" {
@@ -90,12 +103,22 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 		controller.renderSignupPage(c, w, r, form)
 		return
 	}
-	if !user.ValidateHashKey() {
+	inviteUser, err := controller.findInviteUserByUserId(user.UserId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if inviteUser == nil || inviteUser.InviteCode != user.HashKey {
 		form.Msg = "ユーザーIDを正しく入力してください。"
 		controller.renderSignupPage(c, w, r, form)
 		return
 	}
-	err := user.AddUser()
+	if inviteUser.IsSignUped() {
+		form.Msg = "そのユーザーはすでに登録されています。"
+		controller.renderSignupPage(c, w, r, form)
+		return
+	}
+	err = user.AddUser(controller.DS, inviteUser)
 	if err != nil {
 		switch err.(type) {
 		case models.AlreadyExistError:

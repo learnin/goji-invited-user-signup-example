@@ -2,18 +2,37 @@ package models
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/mavricknz/ldap"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
 )
 
-const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
 const LDAP_SERVER = "ipa.demo1.freeipa.org"
 const LDAP_PORT = 389
 const LDAP_BIND_USER = "uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
 const LDAP_BIND_PASSWORD = "Secret123"
 const LDAP_BASE_DN = "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
+const (
+	STATUS_NOT_INVITED = "0"
+	STATUS_INVITED     = "1"
+	STATUS_SIGN_UPED   = "2"
+)
+
+type InviteUser struct {
+	Id         int64
+	UserId     string `sql:"size:10"`
+	LastName   string `sql:"size:16"`
+	FirstName  string `sql:"size:16"`
+	Mail       string `sql:"size:128"`
+	InviteCode string `sql:"size:64"`
+	Status     string `sql:"size:1"`
+	InvitedAt  time.Time
+	SignedUpAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
 
 type User struct {
 	UserId    string
@@ -22,6 +41,10 @@ type User struct {
 	FirstName string
 	Mail      string
 	HashKey   string
+}
+
+func (user *InviteUser) IsSignUped() bool {
+	return user.Status == STATUS_SIGN_UPED
 }
 
 func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
@@ -63,7 +86,7 @@ func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
 	return nil
 }
 
-func (user *User) AddUser() error {
+func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error {
 	l := ldap.NewLDAPConnection(LDAP_SERVER, LDAP_PORT)
 	if err := l.Connect(); err != nil {
 		return err
@@ -77,7 +100,20 @@ func (user *User) AddUser() error {
 	} else if exists {
 		return AlreadyExistError{"ユーザーはすでに登録されています。"}
 	}
-	return user.addLdapUser(l)
+
+	f := func(ds *helpers.DataSource) error {
+		tx := ds.GetTx()
+		inviteUser.Status = STATUS_SIGN_UPED
+		inviteUser.SignedUpAt = time.Now()
+		if err := tx.Save(inviteUser).Error; err != nil {
+			return err
+		}
+		return user.addLdapUser(l)
+	}
+	if err := ds.DoInTransaction(f); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (user *User) exists(l *ldap.LDAPConnection) (bool, error) {
@@ -120,11 +156,6 @@ func (user *User) Validate() (bool, string) {
 		return false, msg
 	}
 	return true, ""
-}
-
-func (user *User) ValidateHashKey() bool {
-	fmt.Println(helpers.Hash(user.UserId, SALT))
-	return helpers.Hash(user.UserId, SALT) == user.HashKey
 }
 
 type AlreadyExistError struct {
