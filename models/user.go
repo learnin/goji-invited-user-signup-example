@@ -49,6 +49,7 @@ func (user *InviteUser) IsSignUped() bool {
 
 func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
 	dn := "uid=" + user.UserId + ",cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
+	salt := fmt.Sprintf("%d%s", time.Now().UnixNano(), user.UserId)
 	var addAttrs []ldap.EntryAttribute = []ldap.EntryAttribute{
 		ldap.EntryAttribute{
 			Name:   "objectclass",
@@ -61,6 +62,10 @@ func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
 		ldap.EntryAttribute{
 			Name:   "cn",
 			Values: []string{user.LastName + "　" + user.FirstName},
+		},
+		ldap.EntryAttribute{
+			Name:   "userPassword",
+			Values: []string{helpers.SSHA(user.Password, salt)},
 		},
 		ldap.EntryAttribute{
 			Name:   "givenName",
@@ -101,7 +106,7 @@ func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error 
 		return AlreadyExistError{"ユーザーはすでに登録されています。"}
 	}
 
-	f := func(ds *helpers.DataSource) error {
+	return ds.DoInTransaction(func(ds *helpers.DataSource) error {
 		tx := ds.GetTx()
 		inviteUser.Status = STATUS_SIGN_UPED
 		inviteUser.SignedUpAt = time.Now()
@@ -109,11 +114,7 @@ func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error 
 			return err
 		}
 		return user.addLdapUser(l)
-	}
-	if err := ds.DoInTransaction(f); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (user *User) exists(l *ldap.LDAPConnection) (bool, error) {
