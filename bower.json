@@ -1,0 +1,20 @@
+{
+  "name": "goji-invited-user-signup-example",
+  "version": "0.0.1",
+  "authors": [
+    "Manabu Inoue"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "backbone": "1.1.2",
+    "backbone.marionette": "2.3.0",
+    "jquery": "1.11.2"
+  }
+}

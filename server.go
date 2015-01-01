@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/graceful"
@@ -22,9 +23,16 @@ func main() {
 	goji.Handle("/signup/*", signUp)
 	signUp.Use(middleware.SubRouter)
 	signUpController := controllers.SignUpController{DS: &ds}
-	signUp.Get("/:hashKey", signUpController.ShowSignupPage)
 	signUp.Post("/execute", signUpController.SignUp)
-	signUp.Get("/complete", signUpController.ShowCompletePage)
+	signUp.Get("/:inviteCode", signUpController.ShowSignupPage)
+
+	assets := web.New()
+	assets.Get("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
+	http.Handle("/assets/", assets)
+
+	views := web.New()
+	views.Get("/views/*", http.StripPrefix("/views/", http.FileServer(http.Dir("views"))))
+	http.Handle("/views/", views)
 
 	graceful.PostHook(func() {
 		if err := ds.Close(); err != nil {

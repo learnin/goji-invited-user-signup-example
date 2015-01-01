@@ -35,12 +35,12 @@ type InviteUser struct {
 }
 
 type User struct {
-	UserId    string
-	Password  string
-	LastName  string
-	FirstName string
-	Mail      string
-	HashKey   string
+	UserId     string
+	Password   string
+	LastName   string
+	FirstName  string
+	Mail       string
+	InviteCode string
 }
 
 func (user *InviteUser) IsSignUped() bool {
@@ -136,27 +136,18 @@ func (user *User) exists(l *ldap.LDAPConnection) (bool, error) {
 	return true, nil
 }
 
-func (user *User) Validate() (bool, string) {
-	var msg string
+func (user *User) Validate() (bool, []string) {
+	var messages []string
 	if user.UserId == "" {
-		msg += "ユーザーIDを入力してください。\n"
+		messages = append(messages, "ユーザーIDを入力してください。")
 	}
 	if user.Password == "" {
-		msg += "パスワードを入力してください。\n"
+		messages = append(messages, "パスワードを入力してください。")
 	}
-	if user.LastName == "" {
-		msg += "姓を入力してください。\n"
+	if len(messages) > 0 {
+		return false, messages
 	}
-	if user.FirstName == "" {
-		msg += "名を入力してください。\n"
-	}
-	if user.Mail == "" {
-		msg += "メールアドレスを入力してください。\n"
-	}
-	if msg != "" {
-		return false, msg
-	}
-	return true, ""
+	return true, messages
 }
 
 type AlreadyExistError struct {

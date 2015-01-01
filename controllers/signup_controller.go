@@ -1,81 +1,59 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
-	"strings"
 
-	"github.com/flosch/pongo2"
 	"github.com/zenazn/goji/web"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
 	"github.com/learnin/goji-invited-user-signup-example/models"
 )
 
+const DEBUG = true
+
 type SignUpController struct {
 	DS *helpers.DataSource
 }
 
 type UserForm struct {
-	HashKey         string
+	InviteCode      string
 	Msg             string
 	UserId          string
 	Password        string
 	ConfirmPassword string
-	LastName        string
-	FirstName       string
-	Mail            string
 }
 
-var signupTpl = pongo2.Must(pongo2.FromFile("views/signup.tpl"))
-var completeTpl = pongo2.Must(pongo2.FromFile("views/complete.tpl"))
+type Res struct {
+	Error        bool
+	Messages     []string
+	DebugMessage string
+}
 
-func request2UserForm(r *http.Request) UserForm {
-	var form UserForm
-	form.UserId = r.FormValue("userId")
-	form.Password = r.FormValue("password")
-	form.ConfirmPassword = r.FormValue("confirmPassword")
-	form.LastName = r.FormValue("lastName")
-	form.FirstName = r.FormValue("firstName")
-	form.Mail = r.FormValue("mail")
-	form.HashKey = r.FormValue("hashKey")
-	return form
+func snedEroorResponse(w http.ResponseWriter, e error, messages ...string) {
+	if messages[0] == "" {
+		messages = []string{"システムエラーが発生しました。"}
+	}
+	res := Res{
+		Error:    true,
+		Messages: messages,
+	}
+	if DEBUG && e != nil {
+		res.DebugMessage = e.Error()
+	}
+	encoder := json.NewEncoder(w)
+	encoder.Encode(res)
 }
 
 func (controller *SignUpController) ShowSignupPage(c web.C, w http.ResponseWriter, r *http.Request) {
-	hashKey := c.URLParams["hashKey"]
-	if hashKey == "" {
-		http.Error(w, "", http.StatusNotFound)
-		return
-	}
-	var form UserForm
-	form.HashKey = hashKey
-	controller.renderSignupPage(c, w, r, form)
-}
-
-func (controller *SignUpController) ShowCompletePage(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := completeTpl.ExecuteWriter(pongo2.Context{"": ""}, w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (controller *SignUpController) renderSignupPage(c web.C, w http.ResponseWriter, r *http.Request, form UserForm) {
-	err := signupTpl.ExecuteWriter(pongo2.Context{"form": form}, w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	http.ServeFile(w, r, "views/index.html")
 }
 
 func (controller *SignUpController) userForm2User(form UserForm) models.User {
 	var user models.User
 	user.UserId = form.UserId
 	user.Password = form.Password
-	user.LastName = form.LastName
-	user.FirstName = form.FirstName
-	user.Mail = form.Mail
-	user.HashKey = form.HashKey
+	user.InviteCode = form.InviteCode
 	return user
 }
 
@@ -90,57 +68,60 @@ func (controller *SignUpController) findInviteUserByUserId(userId string) (*mode
 	return &inviteUser, nil
 }
 
+func (controller *SignUpController) validate(form UserForm, user models.User) (bool, []string) {
+	_, messages := user.Validate()
+	if form.ConfirmPassword == "" {
+		messages = append(messages, "パスワード(確認)を入力してください。")
+	} else if form.Password != "" && form.Password != form.ConfirmPassword {
+		messages = append(messages, "パスワードとパスワード(確認)が一致していません。")
+	}
+	if len(messages) > 0 {
+		return false, messages
+	}
+	return true, messages
+}
+
 func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *http.Request) {
-	form := request2UserForm(r)
-	if form.HashKey == "" {
+	form := UserForm{}
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	if form.InviteCode == "" {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
 	user := controller.userForm2User(form)
-	if ok, msg := controller.validate(form, user); !ok {
-		msg = strings.Replace(msg, "\n", "<br/>", -1)
-		form.Msg = msg
-		controller.renderSignupPage(c, w, r, form)
+	if ok, messages := controller.validate(form, user); !ok {
+		snedEroorResponse(w, nil, messages...)
 		return
 	}
 	inviteUser, err := controller.findInviteUserByUserId(user.UserId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		snedEroorResponse(w, err, "")
 		return
 	}
-	if inviteUser == nil || inviteUser.InviteCode != user.HashKey {
-		form.Msg = "ユーザーIDを正しく入力してください。"
-		controller.renderSignupPage(c, w, r, form)
+	if inviteUser == nil || inviteUser.InviteCode != user.InviteCode {
+		snedEroorResponse(w, nil, "ユーザーIDを正しく入力してください。")
 		return
 	}
 	if inviteUser.IsSignUped() {
-		form.Msg = "そのユーザーはすでに登録されています。"
-		controller.renderSignupPage(c, w, r, form)
+		snedEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
 		return
 	}
+	user.LastName = inviteUser.LastName
+	user.FirstName = inviteUser.FirstName
+	user.Mail = inviteUser.Mail
 	err = user.AddUser(controller.DS, inviteUser)
 	if err != nil {
 		switch err.(type) {
 		case models.AlreadyExistError:
-			form.Msg = "そのユーザーはすでに登録されています。"
-			controller.renderSignupPage(c, w, r, form)
+			snedEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			snedEroorResponse(w, err, "")
 		}
 		return
 	}
-	http.Redirect(w, r, "/signup/complete", http.StatusFound)
-}
-
-func (controller *SignUpController) validate(form UserForm, user models.User) (bool, string) {
-	_, msg := user.Validate()
-	if form.ConfirmPassword == "" {
-		msg += "パスワード(確認)を入力してください。\n"
-	} else if form.Password != "" && form.Password != form.ConfirmPassword {
-		msg += "パスワードとパスワード(確認)が一致していません。\n"
-	}
-	if msg != "" {
-		return false, msg
-	}
-	return true, ""
+	encoder := json.NewEncoder(w)
+	encoder.Encode(Res{Error: false})
 }
