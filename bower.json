@@ -13,8 +13,7 @@
     "tests"
   ],
   "dependencies": {
-    "backbone": "1.1.2",
-    "backbone.marionette": "2.3.0",
-    "jquery": "1.11.2"
+    "angular": "1.2.28",
+    "angular-route": "1.2.28"
   }
 }
