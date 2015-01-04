@@ -1,6 +1,8 @@
-var signUpControllers = angular.module('signUpControllers', []);
+'use strict';
 
-signUpControllers.controller('SignUpController', ['$scope', '$http', '$location', function($scope, $http, $location) {
+var appControllers = require('./index');
+
+appControllers.controller('SignUpController', ['$scope', '$http', '$location', function($scope, $http, $location) {
   $scope.signUp = function() {
     var inviteCode = $location.absUrl().replace(/^.*signup\//, '').replace(/\?.*/, '').replace(/#.*/, '');
     $http.post('/signup/execute', {

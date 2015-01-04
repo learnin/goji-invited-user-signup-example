@@ -26,3 +26,4 @@ _testmain.go
 bower_components
 node_modules
 npm-debug.log 
+assets/javascripts
