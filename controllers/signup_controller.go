@@ -25,9 +25,9 @@ type UserForm struct {
 }
 
 type Res struct {
-	Error        bool
-	Messages     []string
-	DebugMessage string
+	Error        bool     `json:"error"`
+	Messages     []string `json:"messages"`
+	DebugMessage string   `json:"debugMessage"`
 }
 
 func snedEroorResponse(w http.ResponseWriter, e error, messages ...string) {

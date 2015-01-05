@@ -14,8 +14,8 @@ appControllers.controller('SignUpController', ['$scope', '$http', '$location', f
       cache: false
     }
     ).success(function(data) {
-      if (data.Error) {
-        $scope.messages = data.Messages;
+      if (data.error) {
+        $scope.messages = data.messages;
         return;
       }
       $location.path('/signup/complete');
