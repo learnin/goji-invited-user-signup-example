@@ -123,8 +123,10 @@ func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error 
 
 	return ds.DoInTransaction(func(ds *helpers.DataSource) error {
 		tx := ds.GetTx()
+		now := time.Now()
 		inviteUser.Status = STATUS_SIGN_UPED
-		inviteUser.SignedUpAt = time.Now()
+		inviteUser.SignedUpAt = now
+		inviteUser.UpdatedAt = now
 		if err := tx.Save(inviteUser).Error; err != nil {
 			return err
 		}
