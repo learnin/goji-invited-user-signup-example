@@ -1,9 +1,21 @@
 package helpers
 
 import (
+	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )
+
+const DATABASE_CONFIG_FILE = "config/database.json"
+
+type config struct {
+	Host     string
+	Port     int
+	Database string
+	Username string
+	Password string
+}
 
 type DataSource struct {
 	db *gorm.DB
@@ -11,7 +23,13 @@ type DataSource struct {
 }
 
 func (ds *DataSource) Connect() error {
-	db, err := gorm.Open("mysql", "example_app:example_app@tcp(localhost:3306)/invited_user_signup_example?charset=utf8&parseTime=True&loc=Asia%2FTokyo")
+	jsonHelper := Json{}
+	var cfg config
+	if err := jsonHelper.UnmarshalJsonFile(DATABASE_CONFIG_FILE, &cfg); err != nil {
+		return err
+	}
+	connStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Asia%%2FTokyo", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
+	db, err := gorm.Open("mysql", connStr)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,7 @@
+{
+  "host": "ipa.demo1.freeipa.org",
+  "port": 389,
+  "bindDn": "uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org",
+  "bindPassword": "Secret123",
+  "baseDn": "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
+}

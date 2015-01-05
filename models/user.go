@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/mavricknz/ldap"
@@ -9,16 +10,21 @@ import (
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
 )
 
-const LDAP_SERVER = "ipa.demo1.freeipa.org"
-const LDAP_PORT = 389
-const LDAP_BIND_USER = "uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
-const LDAP_BIND_PASSWORD = "Secret123"
-const LDAP_BASE_DN = "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
 const (
 	STATUS_NOT_INVITED = "0"
 	STATUS_INVITED     = "1"
 	STATUS_SIGN_UPED   = "2"
 )
+
+const LDAP_CONFIG_FILE = "config/ldap.json"
+
+type ldapConfig struct {
+	Host         string
+	Port         uint16
+	BindDn       string
+	BindPassword string
+	BaseDn       string
+}
 
 type InviteUser struct {
 	Id         int64
@@ -43,12 +49,21 @@ type User struct {
 	InviteCode string
 }
 
+var ldapCfg ldapConfig
+
+func init() {
+	jsonHelper := helpers.Json{}
+	if err := jsonHelper.UnmarshalJsonFile(LDAP_CONFIG_FILE, &ldapCfg); err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func (user *InviteUser) IsSignUped() bool {
 	return user.Status == STATUS_SIGN_UPED
 }
 
 func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
-	dn := "uid=" + user.UserId + ",cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org"
+	dn := "uid=" + user.UserId + "," + ldapCfg.BaseDn
 	salt := fmt.Sprintf("%d%s", time.Now().UnixNano(), user.UserId)
 	var addAttrs []ldap.EntryAttribute = []ldap.EntryAttribute{
 		ldap.EntryAttribute{
@@ -92,12 +107,12 @@ func (user *User) addLdapUser(l *ldap.LDAPConnection) error {
 }
 
 func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error {
-	l := ldap.NewLDAPConnection(LDAP_SERVER, LDAP_PORT)
+	l := ldap.NewLDAPConnection(ldapCfg.Host, ldapCfg.Port)
 	if err := l.Connect(); err != nil {
 		return err
 	}
 	defer l.Close()
-	if err := l.Bind(LDAP_BIND_USER, LDAP_BIND_PASSWORD); err != nil {
+	if err := l.Bind(ldapCfg.BindDn, ldapCfg.BindPassword); err != nil {
 		return err
 	}
 	if exists, err := user.exists(l); err != nil {
@@ -121,7 +136,7 @@ func (user *User) exists(l *ldap.LDAPConnection) (bool, error) {
 	filter := "(uid=" + user.UserId + ")"
 	attributes := []string{"uid"}
 	searchRequest := ldap.NewSearchRequest(
-		LDAP_BASE_DN,
+		ldapCfg.BaseDn,
 		ldap.ScopeWholeSubtree, ldap.DerefAlways, 0, 0, false,
 		filter,
 		attributes,
