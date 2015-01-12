@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -13,7 +15,28 @@ import (
 	"github.com/learnin/goji-invited-user-signup-example/models"
 )
 
+const SMTP_CONFIG_FILE = "config/smtp.json"
 const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
+
+type smtpConfig struct {
+	Host     string
+	Port     uint16
+	Username string
+	Password string
+	From     string
+	Subject  string
+}
+
+var smtpCfg smtpConfig
+var inviteMailTpl *template.Template
+
+func init() {
+	jsonHelper := helpers.Json{}
+	if err := jsonHelper.UnmarshalJsonFile(SMTP_CONFIG_FILE, &smtpCfg); err != nil {
+		log.Fatalln(err)
+	}
+	inviteMailTpl = template.Must(template.ParseFiles("config/invite_mail.tpl"))
+}
 
 func main() {
 	app := cli.NewApp()
@@ -44,14 +67,20 @@ func action(c *cli.Context) error {
 		fmt.Println("未招待のユーザはありません。")
 		return nil
 	}
-	smtpUtil := helpers.SmtpUtil{}
-	client, err := smtpUtil.Connect()
+	smtpClient := helpers.SmtpClient{
+		Host:     smtpCfg.Host,
+		Port:     smtpCfg.Port,
+		Username: smtpCfg.Username,
+		Password: smtpCfg.Password,
+	}
+	client, err := smtpClient.Connect()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
 	var e error
+	var b bytes.Buffer
 
 	for i := 0; i < inviteUsersCount; i++ {
 		if err := ds.DoInTransaction(func(ds *helpers.DataSource) error {
@@ -65,7 +94,17 @@ func action(c *cli.Context) error {
 			if err := tx.Save(inviteUser).Error; err != nil {
 				return err
 			}
-			return smtpUtil.SendMail(client, inviteUser.Mail)
+			b.Reset()
+			if err := inviteMailTpl.Execute(&b, inviteUser); err != nil {
+				return err
+			}
+			mail := helpers.Mail{
+				From:    smtpCfg.From,
+				To:      inviteUser.Mail,
+				Subject: smtpCfg.Subject,
+				Body:    b.String(),
+			}
+			return smtpClient.SendMail(client, mail)
 		}); err != nil {
 			// FIXME エラーが発生してもスキップするようにする
 			e = err

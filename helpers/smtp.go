@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/smtp"
 	"strings"
 	"time"
@@ -14,69 +13,60 @@ import (
 	"golang.org/x/text/transform"
 )
 
-const SMTP_CONFIG_FILE = "config/smtp.json"
-
-type SmtpUtil struct {
-}
-
-type smtpConfig struct {
+type SmtpClient struct {
 	Host     string
 	Port     uint16
 	Username string
 	Password string
-	From     string
 }
 
-var smtpCfg smtpConfig
-
-func init() {
-	jsonHelper := Json{}
-	if err := jsonHelper.UnmarshalJsonFile(SMTP_CONFIG_FILE, &smtpCfg); err != nil {
-		log.Fatalln(err)
-	}
+type Mail struct {
+	From    string
+	To      string
+	Subject string
+	Body    string
 }
 
-func (util *SmtpUtil) Connect() (*smtp.Client, error) {
-	c, err := smtp.Dial(fmt.Sprintf("%s:%d", smtpCfg.Host, smtpCfg.Port))
+func (client *SmtpClient) Connect() (*smtp.Client, error) {
+	c, err := smtp.Dial(fmt.Sprintf("%s:%d", client.Host, client.Port))
 	if err != nil {
 		return nil, err
 	}
-
-	// auth := smtp.PlainAuth("", smtpCfg.Username, smtpCfg.Password, smtpCfg.Host)
-
 	if err := c.Hello("localhost"); err != nil {
 		return nil, err
 	}
-	// if ok, _ := c.Extension("AUTH"); ok {
-	// 	if err := c.Auth(auth); err != nil {
-	// 		return err
-	// 	}
-	// }
+	if client.Username != "" {
+		if ok, _ := c.Extension("AUTH"); ok {
+			if err := c.Auth(smtp.PlainAuth("", client.Username, client.Password, client.Host)); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return c, nil
 }
 
-func (util *SmtpUtil) SendMail(c *smtp.Client, to string) error {
+func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 	if err := c.Reset(); err != nil {
 		return err
 	}
-	c.Mail(smtpCfg.From)
-	if err := c.Rcpt(to); err != nil {
+	c.Mail(mail.From)
+	if err := c.Rcpt(mail.To); err != nil {
 		return err
 	}
 	w, err := c.Data()
 	if err != nil {
 		return err
 	}
-	subject, err := encodeSubject("テストおおおおおお。あああいいいいんんんaいいう1234あああああああああああいいいいいいいいいいう")
+	subject, err := encodeSubject(mail.Subject)
 	if err != nil {
 		return err
 	}
-	body, err := encodeToJIS("テストメールです" + "\r\n")
+	body, err := encodeToJIS(mail.Body + "\r\n")
 	if err != nil {
 		return err
 	}
-	msg := "From: " + smtpCfg.From + "\r\n" +
-		"To: " + to + "\r\n" +
+	msg := "From: " + mail.From + "\r\n" +
+		"To: " + mail.To + "\r\n" +
 		"Subject:" + subject +
 		"Date: " + time.Now().Format(time.RFC1123Z) + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
