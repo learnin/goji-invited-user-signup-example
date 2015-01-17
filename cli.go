@@ -2,19 +2,23 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"strconv"
 	"text/template"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/mattn/go-colorable"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
 	"github.com/learnin/goji-invited-user-signup-example/models"
+	"github.com/learnin/goji-invited-user-signup-example/multiOutLogger"
 )
 
 const SMTP_CONFIG_FILE = "config/smtp.json"
+const LOG_DIR = "log"
+const LOG_FILE = LOG_DIR + "/cli.log"
 const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
 
 type smtpConfig struct {
@@ -28,6 +32,7 @@ type smtpConfig struct {
 
 var smtpCfg smtpConfig
 var inviteMailTpl *template.Template
+var log *multiOutLogger.MultiOutLogger
 
 func init() {
 	jsonHelper := helpers.Json{}
@@ -38,12 +43,35 @@ func init() {
 }
 
 func main() {
+	if fi, err := os.Stat(LOG_DIR); os.IsNotExist(err) {
+		if err := os.MkdirAll(LOG_DIR, 0755); err != nil {
+			panic(err)
+		}
+	} else {
+		if !fi.IsDir() {
+			panic("ログディレクトリ " + LOG_DIR + " はディレクトリではありません。")
+		}
+	}
+	if logf, err := os.OpenFile(LOG_FILE, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err != nil {
+		panic(err)
+	} else {
+		defer logf.Close()
+		stdOutLogrus := logrus.New()
+		stdOutLogrus.Out = colorable.NewColorableStdout()
+		fileLogrus := logrus.New()
+		fileLogrus.Out = logf
+		fileLogrus.Formatter = &logrus.TextFormatter{
+			DisableColors: true,
+		}
+		log = multiOutLogger.New(stdOutLogrus, fileLogrus)
+	}
+
 	app := cli.NewApp()
 	app.Name = "send invite mail"
 	app.Usage = ""
 	app.Action = func(c *cli.Context) {
-		log.Println("招待メール送信処理を開始します。")
-		defer log.Println("招待メール送信処理を終了しました。")
+		log.Info("招待メール送信処理を開始します。")
+		defer log.Info("招待メール送信処理を終了しました。")
 
 		action(c)
 	}
@@ -53,19 +81,19 @@ func main() {
 func action(c *cli.Context) {
 	var ds helpers.DataSource
 	if err := ds.Connect(); err != nil {
-		log.Println("DB接続に失敗しました。" + err.Error())
+		log.Error("DB接続に失敗しました。" + err.Error())
 		return
 	}
 	defer ds.Close()
 
 	var inviteUsers []models.InviteUser
 	if d := ds.GetDB().Where(&models.InviteUser{Status: models.STATUS_NOT_INVITED}).Find(&inviteUsers); d.Error != nil {
-		log.Println("招待対象ユーザの取得に失敗しました。" + d.Error.Error())
+		log.Error("招待対象ユーザの取得に失敗しました。" + d.Error.Error())
 		return
 	}
 	inviteUsersCount := len(inviteUsers)
 	if inviteUsersCount == 0 {
-		log.Println("未招待のユーザはありません。")
+		log.Info("未招待のユーザはありません。")
 		return
 	}
 	smtpClient := helpers.SmtpClient{
@@ -76,7 +104,7 @@ func action(c *cli.Context) {
 	}
 	client, err := smtpClient.Connect()
 	if err != nil {
-		log.Println("SMTP接続に失敗しました。" + err.Error())
+		log.Error("SMTP接続に失敗しました。" + err.Error())
 		return
 	}
 	defer func() {
@@ -112,12 +140,12 @@ func action(c *cli.Context) {
 			return smtpClient.SendMail(client, mail)
 		}); err != nil {
 			hasError = true
-			log.Println(inviteUser.Mail + " 宛のメール送信・DB更新に失敗しました。" + err.Error())
+			log.Error(inviteUser.Mail + " 宛のメール送信・DB更新に失敗しました。" + err.Error())
 		} else {
-			log.Println(inviteUser.Mail + " へ招待メールを送信しました。")
+			log.Info(inviteUser.Mail + " へ招待メールを送信しました。")
 		}
 	}
 	if hasError {
-		log.Println("メール送信・DB更新でエラーになったものがあります。")
+		log.Error("メール送信・DB更新でエラーになったものがあります。")
 	}
 }
