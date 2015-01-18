@@ -33,12 +33,15 @@ func (ds *DataSource) Connect() error {
 	if err != nil {
 		return err
 	}
-	db.LogMode(true)
 	if err := db.DB().Ping(); err != nil {
 		return err
 	}
 	ds.db = &db
 	return nil
+}
+
+func (ds *DataSource) LogMode(b bool) {
+	ds.db.LogMode(b)
 }
 
 func (ds *DataSource) Close() error {

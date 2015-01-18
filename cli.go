@@ -67,8 +67,23 @@ func main() {
 	}
 
 	app := cli.NewApp()
-	app.Name = "send invite mail"
-	app.Usage = ""
+	app.Name = "send-invite-mail"
+	app.Version = "0.0.1"
+	app.Author = "Manabu Inoue"
+	app.Email = ""
+	app.HideVersion = true
+	app.EnableBashCompletion = true
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "verbose, v",
+			Usage: "verbose mode. a lot more information output",
+		},
+		cli.BoolFlag{
+			Name:  "version, V",
+			Usage: "print the version",
+		},
+	}
+	app.Usage = "send invite mail for signup."
 	app.Action = func(c *cli.Context) {
 		log.Info("招待メール送信処理を開始します。")
 		defer log.Info("招待メール送信処理を終了しました。")
@@ -79,12 +94,18 @@ func main() {
 }
 
 func action(c *cli.Context) {
+	isVerbose := c.Bool("verbose")
+
 	var ds helpers.DataSource
 	if err := ds.Connect(); err != nil {
 		log.Error("DB接続に失敗しました。" + err.Error())
 		return
 	}
 	defer ds.Close()
+
+	if isVerbose {
+		ds.LogMode(true)
+	}
 
 	var inviteUsers []models.InviteUser
 	if d := ds.GetDB().Where(&models.InviteUser{Status: models.STATUS_NOT_INVITED}).Find(&inviteUsers); d.Error != nil {
