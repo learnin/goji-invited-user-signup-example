@@ -9,11 +9,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/learnin/go-multilog"
 	"github.com/mattn/go-colorable"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
 	"github.com/learnin/goji-invited-user-signup-example/models"
-	"github.com/learnin/goji-invited-user-signup-example/multiOutLogger"
 )
 
 const SMTP_CONFIG_FILE = "config/smtp.json"
@@ -32,7 +32,7 @@ type smtpConfig struct {
 
 var smtpCfg smtpConfig
 var inviteMailTpl *template.Template
-var log *multiOutLogger.MultiOutLogger
+var log *multilog.MultiLogger
 
 func init() {
 	jsonHelper := helpers.Json{}
@@ -60,10 +60,8 @@ func main() {
 		stdOutLogrus.Out = colorable.NewColorableStdout()
 		fileLogrus := logrus.New()
 		fileLogrus.Out = logf
-		fileLogrus.Formatter = &logrus.TextFormatter{
-			DisableColors: true,
-		}
-		log = multiOutLogger.New(stdOutLogrus, fileLogrus)
+		fileLogrus.Formatter = &logrus.TextFormatter{DisableColors: true}
+		log = multilog.New(stdOutLogrus, fileLogrus)
 	}
 
 	app := cli.NewApp()
