@@ -5,7 +5,7 @@ var angular = require('angular');
 require('angular-route');
 require('./controllers/index');
 
-var app = angular.module('app', ['ngRoute', 'appControllers']);
+var app = angular.module('app', ['ngRoute', 'appControllers', 'ui.bootstrap']);
 
 app.config(['$routeProvider', function($routeProvider) {
   $routeProvider.

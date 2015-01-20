@@ -2,10 +2,46 @@
 <html xmlns:ng="http://angularjs.org" id="ng-app" ng-app="app">
   <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ユーザー登録</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+
+	<link rel="stylesheet" href="/assets/stylesheets/app.css">    
   </head>
   <body>
-    <div ng-view></div>
+  	<nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Project name</a>
+        </div>
+    </nav>
+
+    <div class="container">
+      <div ng-controller="MessageController">
+        <alert ng-show="alerts" type="danger" close="closeAlert()">
+        <ul>
+          <li ng-repeat="alert in alerts">{{alert}}</li>
+        </ul>
+        </alert>
+        <alert ng-show="messages" type="success" close="closeMessage()">
+        <ul>
+          <li ng-repeat="message in messages">{{message}}</li>
+        </ul>
+        </alert>
+      </div>
+
+    	<div ng-view></div>
+    </div><!-- /.container -->
+
     <script src="/assets/javascripts/bundle.js"></script>    
   </body>
 </html>

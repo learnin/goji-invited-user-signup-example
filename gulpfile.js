@@ -12,7 +12,10 @@ var gulp = require('gulp'),
     isRelease = !!gutil.env.release;
 
 var bundler = browserify({
-  entries: ['./src/app.js'],
+  entries: [
+    './src/app.js',
+    './bower_components/angular-bootstrap/ui-bootstrap-tpls.js'
+  ],
   debug: !isRelease
 }, watchify.args);
 

@@ -2,7 +2,7 @@
 
 var appControllers = require('./index');
 
-appControllers.controller('SignUpController', ['$scope', '$http', '$location', function($scope, $http, $location) {
+appControllers.controller('SignUpController', ['$rootScope', '$scope', '$http', '$location', function($rootScope, $scope, $http, $location) {
   $scope.signUp = function() {
     var inviteCode = $location.absUrl().replace(/^.*signup\//, '').replace(/\?.*/, '').replace(/#.*/, '');
     $http.post('/signup/execute', {
@@ -15,7 +15,7 @@ appControllers.controller('SignUpController', ['$scope', '$http', '$location', f
     }
     ).success(function(data) {
       if (data.error) {
-        $scope.messages = data.messages;
+        $rootScope.$broadcast('showAlert', data.messages);
         return;
       }
       $location.path('/signup/complete');
@@ -23,5 +23,9 @@ appControllers.controller('SignUpController', ['$scope', '$http', '$location', f
       $scope.message = "システムエラーが発生しました。";
       return;
     });
+  };
+
+  $scope.closeAlert = function() {
+    $scope.messages = null;
   };
 }]);
