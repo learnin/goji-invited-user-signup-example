@@ -1,6 +1,6 @@
 # goji-invited-user-signup-example
 
-Example invited user signup application using goji
+Example of web app using goji that invited users to sign up
 
 ## License
 

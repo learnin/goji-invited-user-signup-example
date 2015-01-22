@@ -1,8 +1,17 @@
 <div ng-controller="SignUpController">
-  <form ng-submit="signUp()">
-    ユーザーID:<input type="text" ng-model="userId" size="30" placeholder=""><br/>
-    パスワード:<input type="password" ng-model="password"><br/>
-    パスワード(確認):<input type="password" ng-model="confirmPassword"><br/>
-    <input class="btn btn-primary btn-lg" type="submit" value="登録する">
+  <form ng-submit="signUp()" class="form-signup">
+    <div class="form-group">
+      <label for="userId">ユーザーID</label>
+      <input type="text" id="userId" ng-model="userId" size="30" placeholder="" class="form-control">
+    </div>
+    <div class="form-group">
+      <label for="password">パスワード</label>
+      <input type="password" id="password" ng-model="password" size="30" placeholder="" class="form-control">
+    </div>
+    <div class="form-group">
+      <label for="confirmPassword">パスワード(確認)</label>
+      <input type="password" id="confirmPassword" ng-model="confirmPassword" size="30" placeholder="" class="form-control">
+    </div>
+    <button class="btn btn-primary btn-lg btn-block" type="submit">登録する</button>
   </form>
 </div>
