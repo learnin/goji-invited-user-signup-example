@@ -11,6 +11,8 @@ var gulp = require('gulp'),
     gulpif = require('gulp-if'),
     isRelease = !!gutil.env.release;
 
+watchify.args.fullPaths = false;
+
 var bundler = browserify({
   entries: [
     './src/app.js',
