@@ -24,8 +24,4 @@ appControllers.controller('SignUpController', ['$rootScope', '$scope', '$http', 
       return;
     });
   };
-
-  $scope.closeAlert = function() {
-    $scope.messages = null;
-  };
 }]);
