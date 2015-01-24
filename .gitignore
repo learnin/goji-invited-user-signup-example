@@ -27,4 +27,5 @@ bower_components
 node_modules
 npm-debug.log 
 assets/javascripts
+assets/stylesheets
 log

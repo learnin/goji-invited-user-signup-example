@@ -11,16 +11,17 @@ var gulp = require('gulp'),
     minifyCSS = require('gulp-minify-css'),
     gulpif = require('gulp-if'),
     concat = require('gulp-concat'),
+    del = require('del'),
     isRelease = !!gutil.env.release;
 
 var paths = {
   js: [
-    './src/app.js',
+    './src/javascripts/app.js',
     './bower_components/angular-bootstrap/ui-bootstrap-tpls.js'
   ],
   css: [
     './bower_components/bootstrap/dist/css/bootstrap.min.css',
-    './assets/stylesheets/app.css'
+    './src/stylesheets/app.css'
   ]
 };
 
@@ -55,6 +56,12 @@ gulp.task('css', function() {
     .pipe(concat('bundle.css'))
     .pipe(gulpif(isRelease, minifyCSS()))
     .pipe(gulp.dest('./assets/stylesheets'));
+});
+
+gulp.task('clean', function() {
+  del(['log/*.log', 'npm-debug.log', 'assets/javascripts/*', 'assets/stylesheets/*'], function (err, paths) {
+    console.log('Deleted files/folders:\n', paths.join('\n'));
+  });
 });
 
 gulp.task('default', ['browserify', 'css']);

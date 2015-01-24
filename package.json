@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "Example invited user signup application using goji",
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "del": "^1.1.1"
+  },
   "devDependencies": {
     "brfs": "^1.2.0",
     "browserify": "^8.0.3",
