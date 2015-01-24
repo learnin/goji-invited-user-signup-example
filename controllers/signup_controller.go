@@ -123,5 +123,5 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 		return
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(Res{Error: false})
+	encoder.Encode(Res{Error: false, Messages: []string{}})
 }
