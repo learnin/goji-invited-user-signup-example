@@ -19,8 +19,9 @@ appControllers.controller('SignUpController', ['$rootScope', '$scope', '$http', 
         return;
       }
       $location.path('/signup/complete');
+      $rootScope.$broadcast('showMessage', ['登録しました。']);
     }).error(function(data) {
-      $scope.message = "システムエラーが発生しました。";
+      $rootScope.$broadcast('showAlert', ['システムエラーが発生しました。']);
       return;
     });
   };
