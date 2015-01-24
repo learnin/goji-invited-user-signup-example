@@ -1,12 +1,15 @@
 body {
   padding-top: 50px;
 }
-.starter-template {
-  padding: 40px 15px;
-  text-align: center;
+.messages-container {
+  padding: 30px 100px;
 }
 .form-signup {
     margin: 0 auto;
     max-width: 330px;
     padding: 15px;
+}
+.base-template {
+	padding: 15px 15px;
+    text-align: center;
 }

@@ -23,17 +23,19 @@
     </nav>
 
     <div class="container">
-      <div ng-controller="MessageController">
-        <alert ng-show="alerts" type="danger" close="closeAlert()">
-        <ul>
-          <li ng-repeat="alert in alerts">{{alert}}</li>
-        </ul>
-        </alert>
-        <alert ng-show="messages" type="success" close="closeMessage()">
-        <ul>
-          <li ng-repeat="message in messages">{{message}}</li>
-        </ul>
-        </alert>
+      <div class="messages-container">
+        <div ng-controller="MessageController">
+          <alert ng-show="alerts" type="danger" close="closeAlert()">
+          <ul>
+            <li ng-repeat="alert in alerts">{{alert}}</li>
+          </ul>
+          </alert>
+          <alert ng-show="messages" type="success" close="closeMessage()">
+          <ul>
+            <li ng-repeat="message in messages">{{message}}</li>
+          </ul>
+          </alert>
+        </div>
       </div>
 
     	<div ng-view></div>
