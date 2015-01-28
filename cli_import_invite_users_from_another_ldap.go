@@ -99,8 +99,10 @@ func getUsersFromAnotherLdap() ([]ldapUser, error) {
 		return nil, err
 	}
 	defer l.Close()
-	if err := l.Bind(ldapCfg.BindDn, ldapCfg.BindPassword); err != nil {
-		return nil, err
+	if ldapCfg.BindDn != "" {
+		if err := l.Bind(ldapCfg.BindDn, ldapCfg.BindPassword); err != nil {
+			return nil, err
+		}
 	}
 	searchRequest := ldap.NewSearchRequest(
 		ldapCfg.BaseDn,
