@@ -170,15 +170,14 @@ func action(c *cli.Context) {
 		}
 		now := time.Now()
 		inviteUser := models.InviteUser{
-			UserId:     user.Uid,
-			LastName:   user.Sn,
-			FirstName:  user.GivenName,
-			Mail:       user.Mail,
-			Status:     models.STATUS_NOT_INVITED,
-			InvitedAt:  now,
-			SignedUpAt: now,
-			CreatedAt:  now,
-			UpdatedAt:  now,
+			UserId:    user.Uid,
+			LastName:  user.Sn,
+			FirstName: user.GivenName,
+			Mail:      user.Mail,
+			Status:    models.STATUS_NOT_INVITED,
+			InvitedAt: now,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		if err := ds.DoInTransaction(func(ds *helpers.DataSource) error {
 			tx := ds.GetTx()
