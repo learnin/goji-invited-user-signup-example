@@ -58,6 +58,10 @@ func init() {
 	}
 }
 
+func (user *InviteUser) IsNotInvited() bool {
+	return user.Status == STATUS_NOT_INVITED
+}
+
 func (user *InviteUser) IsSignUped() bool {
 	return user.Status == STATUS_SIGN_UPED
 }

@@ -46,6 +46,20 @@ func snedEroorResponse(w http.ResponseWriter, e error, messages ...string) {
 }
 
 func (controller *SignUpController) ShowSignupPage(c web.C, w http.ResponseWriter, r *http.Request) {
+	inviteCode := c.URLParams["inviteCode"]
+	inviteUser, err := controller.findInviteUserByInviteCode(inviteCode)
+	if err != nil {
+		http.Error(w, "システムエラーが発生しました。", 500)
+		return
+	}
+	if inviteUser == nil || inviteUser.IsNotInvited() {
+		http.Error(w, "URLが誤っています。", 404)
+		return
+	}
+	if inviteUser.IsSignUped() {
+		http.Error(w, "すでに登録されています。", 200)
+		return
+	}
 	http.ServeFile(w, r, "views/index.html")
 }
 
@@ -55,6 +69,17 @@ func (controller *SignUpController) userForm2User(form UserForm) models.User {
 	user.Password = form.Password
 	user.InviteCode = form.InviteCode
 	return user
+}
+
+func (controller *SignUpController) findInviteUserByInviteCode(inviteCode string) (*models.InviteUser, error) {
+	var inviteUser models.InviteUser
+	if d := controller.DS.GetDB().Where(&models.InviteUser{InviteCode: inviteCode}).First(&inviteUser); d.Error != nil {
+		if d.RecordNotFound() {
+			return nil, nil
+		}
+		return nil, d.Error
+	}
+	return &inviteUser, nil
 }
 
 func (controller *SignUpController) findInviteUserByUserId(userId string) (*models.InviteUser, error) {
@@ -101,7 +126,7 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 		snedEroorResponse(w, err, "")
 		return
 	}
-	if inviteUser == nil || inviteUser.InviteCode != user.InviteCode {
+	if inviteUser == nil || inviteUser.InviteCode != user.InviteCode || inviteUser.IsNotInvited() {
 		snedEroorResponse(w, nil, "ユーザーIDを正しく入力してください。")
 		return
 	}
