@@ -15,10 +15,16 @@ var gulp = require('gulp'),
     isRelease = !!gutil.env.release;
 
 var paths = {
-  js: [
-    './src/javascripts/app.js',
-    './bower_components/angular-bootstrap/ui-bootstrap-tpls.js'
-  ],
+  js: {
+    browserify: [
+      './src/javascripts/app.js',
+      './bower_components/angular-bootstrap/ui-bootstrap-tpls.js'
+    ],
+    notBrowserify: [
+      './bower_components/es5-shim/es5-shim.min.js',
+      './bower_components/json3/lib/json3.min.js'
+    ]
+  },
   css: [
     './bower_components/bootstrap/dist/css/bootstrap.min.css',
     './src/stylesheets/app.css'
@@ -28,7 +34,7 @@ var paths = {
 watchify.args.fullPaths = false;
 
 var bundler = browserify({
-  entries: paths.js,
+  entries: paths.js.browserify,
   debug: !isRelease
 }, watchify.args);
 
@@ -51,6 +57,11 @@ bundler.transform('brfs');
 
 gulp.task('browserify', bundle);
 
+gulp.task('notBrowserifyJS', function() {
+  gulp.src(paths.js.notBrowserify)
+    .pipe(gulp.dest('./assets/javascripts'));
+});
+
 gulp.task('css', function() {
   gulp.src(paths.css)
     .pipe(concat('bundle.css'))
@@ -64,4 +75,4 @@ gulp.task('clean', function() {
   });
 });
 
-gulp.task('default', ['browserify', 'css']);
+gulp.task('default', ['browserify', 'notBrowserifyJS', 'css']);
