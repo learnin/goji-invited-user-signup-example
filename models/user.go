@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/mavricknz/ldap"
@@ -54,7 +53,7 @@ var ldapCfg ldapConfig
 func init() {
 	jsonHelper := helpers.Json{}
 	if err := jsonHelper.UnmarshalJsonFile(LDAP_CONFIG_FILE, &ldapCfg); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 

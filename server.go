@@ -16,7 +16,7 @@ import (
 func main() {
 	var ds helpers.DataSource
 	if err := ds.Connect(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	signUp := web.New()
@@ -36,7 +36,7 @@ func main() {
 
 	graceful.PostHook(func() {
 		if err := ds.Close(); err != nil {
-			log.Fatalln(err)
+			log.Println(err)
 		}
 	})
 
