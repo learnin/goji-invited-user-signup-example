@@ -2,6 +2,9 @@ body {
   padding-top: 50px;
   padding-bottom: 20px;
 }
+.messages-container {
+  padding: 30px 100px;
+}
 .footer {
   padding-top: 19px;
   color: #777;
@@ -18,15 +21,8 @@ body {
   margin-left: 10px;
 }
 
-.messages-container {
-  padding: 30px 100px;
-}
 .form-signup {
-    margin: 0 auto;
-    max-width: 330px;
-    padding: 15px;
-}
-.base-template {
-	padding: 15px 15px;
-    text-align: center;
+  margin: 0 auto;
+  max-width: 330px;
+  padding: 15px;
 }
