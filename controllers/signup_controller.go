@@ -32,7 +32,7 @@ type Res struct {
 	DebugMessage string   `json:"debugMessage"`
 }
 
-func snedEroorResponse(w http.ResponseWriter, e error, messages ...string) {
+func sendEroorResponse(w http.ResponseWriter, e error, messages ...string) {
 	if messages[0] == "" {
 		messages = []string{"システムエラーが発生しました。"}
 	}
@@ -121,21 +121,21 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 	}
 	user := controller.userForm2User(form)
 	if ok, messages := controller.validate(form, user); !ok {
-		snedEroorResponse(w, nil, messages...)
+		sendEroorResponse(w, nil, messages...)
 		return
 	}
 	inviteUser, err := controller.findInviteUserByUserId(user.UserId)
 	if err != nil {
 		controller.Logger.Errorf("ユーザ検索時にエラーが発生しました。userId=%s error=%v", user.UserId, err)
-		snedEroorResponse(w, err, "")
+		sendEroorResponse(w, err, "")
 		return
 	}
 	if inviteUser == nil || inviteUser.InviteCode != user.InviteCode || inviteUser.IsNotInvited() {
-		snedEroorResponse(w, nil, "ユーザーIDを正しく入力してください。")
+		sendEroorResponse(w, nil, "ユーザーIDを正しく入力してください。")
 		return
 	}
 	if inviteUser.IsSignUped() {
-		snedEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
+		sendEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
 		return
 	}
 	user.LastName = inviteUser.LastName
@@ -145,10 +145,10 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 	if err != nil {
 		switch err.(type) {
 		case models.AlreadyExistError:
-			snedEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
+			sendEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
 		default:
 			controller.Logger.Errorf("ユーザ登録時にエラーが発生しました。inviteUser=%+v error=%v", inviteUser, err)
-			snedEroorResponse(w, err, "")
+			sendEroorResponse(w, err, "")
 		}
 		return
 	}
