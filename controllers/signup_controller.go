@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/learnin/go-multilog"
 	"github.com/zenazn/goji/web"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
@@ -13,7 +14,8 @@ import (
 const DEBUG = true
 
 type SignUpController struct {
-	DS *helpers.DataSource
+	DS     *helpers.DataSource
+	Logger *multilog.MultiLogger
 }
 
 type UserForm struct {
@@ -49,6 +51,7 @@ func (controller *SignUpController) ShowSignupPage(c web.C, w http.ResponseWrite
 	inviteCode := c.URLParams["inviteCode"]
 	inviteUser, err := controller.findInviteUserByInviteCode(inviteCode)
 	if err != nil {
+		controller.Logger.Errorf("招待コードからのユーザ検索時にエラーが発生しました。inviteCode=%s error=%v", inviteCode, err)
 		http.Error(w, "システムエラーが発生しました。", 500)
 		return
 	}
@@ -123,6 +126,7 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 	}
 	inviteUser, err := controller.findInviteUserByUserId(user.UserId)
 	if err != nil {
+		controller.Logger.Errorf("ユーザ検索時にエラーが発生しました。userId=%s error=%v", user.UserId, err)
 		snedEroorResponse(w, err, "")
 		return
 	}
@@ -143,6 +147,7 @@ func (controller *SignUpController) SignUp(c web.C, w http.ResponseWriter, r *ht
 		case models.AlreadyExistError:
 			snedEroorResponse(w, nil, "そのユーザーはすでに登録されています。")
 		default:
+			controller.Logger.Errorf("ユーザ登録時にエラーが発生しました。inviteUser=%+v error=%v", inviteUser, err)
 			snedEroorResponse(w, err, "")
 		}
 		return
