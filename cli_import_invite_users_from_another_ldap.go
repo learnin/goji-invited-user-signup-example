@@ -163,6 +163,9 @@ func action(c *cli.Context) {
 	existsUserCount := 0
 
 	for _, user := range ldapUsers {
+		if user.Uid == "" {
+			continue
+		}
 		if existsInviteUser, err := existsInviteUserByUserId(ds, user.Uid); err != nil {
 			log.Error("招待ユーザの取得に失敗しました。" + err.Error())
 			return
@@ -177,7 +180,6 @@ func action(c *cli.Context) {
 			FirstName: user.GivenName,
 			Mail:      user.Mail,
 			Status:    models.STATUS_NOT_INVITED,
-			InvitedAt: now,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
