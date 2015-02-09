@@ -18,7 +18,7 @@ import (
 
 const SMTP_CONFIG_FILE = "config/smtp.json"
 const LOG_DIR = "log"
-const LOG_FILE = LOG_DIR + "/cli.log"
+const LOG_FILE = LOG_DIR + "/cli_send_invite_mail.log"
 const SALT = "HsE@U91Ie!8ye8ay^e87wya7Y*R%38[0(*T[9w4eut[9e"
 
 type smtpConfig struct {
