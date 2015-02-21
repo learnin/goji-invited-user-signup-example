@@ -11,8 +11,6 @@ import (
 	"github.com/learnin/goji-invited-user-signup-example/models"
 )
 
-const DEBUG = true
-
 type SignUpController struct {
 	DS     *helpers.DataSource
 	Logger *multilog.MultiLogger
@@ -24,27 +22,6 @@ type UserForm struct {
 	UserId          string
 	Password        string
 	ConfirmPassword string
-}
-
-type Res struct {
-	Error        bool     `json:"error"`
-	Messages     []string `json:"messages"`
-	DebugMessage string   `json:"debugMessage"`
-}
-
-func sendEroorResponse(w http.ResponseWriter, e error, messages ...string) {
-	if messages[0] == "" {
-		messages = []string{"システムエラーが発生しました。"}
-	}
-	res := Res{
-		Error:    true,
-		Messages: messages,
-	}
-	if DEBUG && e != nil {
-		res.DebugMessage = e.Error()
-	}
-	encoder := json.NewEncoder(w)
-	encoder.Encode(res)
 }
 
 func (controller *SignUpController) ShowSignupPage(c web.C, w http.ResponseWriter, r *http.Request) {

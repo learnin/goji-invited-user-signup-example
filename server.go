@@ -53,6 +53,12 @@ func main() {
 	signUp.Post("/execute", signUpController.SignUp)
 	signUp.Get("/:inviteCode", signUpController.ShowSignupPage)
 
+	reInviteController := controllers.ReInviteController{DS: &ds, Logger: log}
+	goji.Get("/reinvite/new/", reInviteController.ShowReInvitePage)
+	goji.Get("/reinvite", http.RedirectHandler("/reinvite/new/#/reinvite", 301))
+	goji.Get("/reinvite/", http.RedirectHandler("/reinvite/new/#/reinvite", 301))
+	goji.Post("/reinvite/execute", reInviteController.ReInvite)
+
 	assets := web.New()
 	assets.Get("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	http.Handle("/assets/", assets)

@@ -16,6 +16,13 @@ app.config(['$routeProvider', function($routeProvider) {
     when('/signup/complete', {
       templateUrl: '/views/signup/complete.html'
     }).
+    when('/reinvite', {
+      templateUrl: '/views/reinvite/new.html',
+      controller: 'ReInviteController'
+    }).
+    when('/reinvite/complete', {
+      templateUrl: '/views/reinvite/complete.html'
+    }).
     otherwise({
       redirectTo: '/'
     });
