@@ -20,7 +20,7 @@ type smtpConfig struct {
 	Subject  string
 }
 
-type Res struct {
+type response struct {
 	Error        bool     `json:"error"`
 	Messages     []string `json:"messages"`
 	DebugMessage string   `json:"debugMessage"`
@@ -41,7 +41,7 @@ func sendEroorResponse(w http.ResponseWriter, e error, messages ...string) {
 	if messages[0] == "" {
 		messages = []string{"システムエラーが発生しました。"}
 	}
-	res := Res{
+	res := response{
 		Error:    true,
 		Messages: messages,
 	}

@@ -110,5 +110,5 @@ func (controller *ReInviteController) ReInvite(c web.C, w http.ResponseWriter, r
 	controller.Logger.Info(inviteUser.Mail + " へ招待メールを再送信しました。")
 
 	encoder := json.NewEncoder(w)
-	encoder.Encode(Res{Error: false, Messages: []string{}})
+	encoder.Encode(response{Error: false, Messages: []string{}})
 }
