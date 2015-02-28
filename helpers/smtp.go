@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/smtp"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -49,7 +50,21 @@ func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 	if err := c.Reset(); err != nil {
 		return err
 	}
-	c.Mail(mail.From)
+	isNameAddrFrom := false
+	var envelopeFrom string
+	var fromName string
+	r, err := regexp.Compile("^(.*)<(.*)>$")
+	if err != nil {
+		return err
+	}
+	if match := r.FindStringSubmatch(mail.From); match != nil {
+		isNameAddrFrom = true
+		fromName = match[1]
+		envelopeFrom = match[2]
+	} else {
+		envelopeFrom = mail.From
+	}
+	c.Mail(envelopeFrom)
 	if err := c.Rcpt(mail.To); err != nil {
 		return err
 	}
@@ -57,6 +72,17 @@ func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 	if err != nil {
 		return err
 	}
+	var headerFrom string
+	if isNameAddrFrom {
+		name, err := encodeSubject(fromName)
+		if err != nil {
+			return err
+		}
+		headerFrom = name + " <" + envelopeFrom + ">"
+	} else {
+		headerFrom = envelopeFrom
+	}
+
 	subject, err := encodeSubject(mail.Subject)
 	if err != nil {
 		return err
@@ -65,7 +91,7 @@ func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 	if err != nil {
 		return err
 	}
-	msg := "From: " + mail.From + "\r\n" +
+	msg := "From: " + headerFrom + "\r\n" +
 		"To: " + mail.To + "\r\n" +
 		"Subject:" + subject +
 		"Date: " + time.Now().Format(time.RFC1123Z) + "\r\n" +
