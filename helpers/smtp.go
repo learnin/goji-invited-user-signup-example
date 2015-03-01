@@ -74,7 +74,7 @@ func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 	}
 	var headerFrom string
 	if isNameAddrFrom {
-		name, err := encodeSubject(fromName)
+		name, err := encodeHeader(fromName)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (client *SmtpClient) SendMail(c *smtp.Client, mail Mail) error {
 		headerFrom = envelopeFrom
 	}
 
-	subject, err := encodeSubject(mail.Subject)
+	subject, err := encodeHeader(mail.Subject)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func encodeToJIS(s string) (string, error) {
 	return string(r), nil
 }
 
-func encodeSubject(subject string) (string, error) {
+func encodeHeader(subject string) (string, error) {
 	b := make([]byte, 0, utf8.RuneCountInString(subject))
 	for _, s := range splitByCharLength(subject, 13) {
 		b = append(b, " =?ISO-2022-JP?B?"...)
