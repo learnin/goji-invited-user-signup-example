@@ -18,14 +18,14 @@
 user="nobody"
 approot="/path/to/goji-invited-user-signup-example"
 prog="goji-invited-user-signup-example"
-cmd="cd $approot; nohup ./${prog}"
+cmd="cd $approot; ./${prog}"
 sysconfig="/etc/sysconfig/${prog}"
 lockfile="/var/lock/subsys/${prog}"
 
 [ -f $sysconfig ] && . $sysconfig
 
 start() {
-    [ -x $cmd ] || exit 5
+    [ -x ${approot}/${prog} ] || exit 5
     echo -n $"Starting $prog: "
     daemon --user=$user $cmd >/dev/null 2>&1 &
     retval=$?
