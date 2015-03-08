@@ -137,6 +137,11 @@ func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error 
 	})
 }
 
+func (user *User) RemoveUser(ldapConn *ldap.LDAPConnection, userId string) error {
+	dn := "uid=" + userId + "," + ldapCfg.BaseDn
+	return ldapConn.Delete(ldap.NewDeleteRequest(dn))
+}
+
 func (user *User) exists(l *ldap.LDAPConnection) (bool, error) {
 	filter := "(uid=" + user.UserId + ")"
 	attributes := []string{"uid"}
