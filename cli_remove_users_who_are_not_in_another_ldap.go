@@ -191,10 +191,13 @@ func action(c *cli.Context) {
 	defer l.Close()
 
 	for _, user := range ldapUsers {
-		if existsUser(anotherLdapUsers, user.Uid) {
-			existsUserCount++
+		if user.Uid == "" {
 			continue
 		}
+		if existsUser(anotherLdapUsers, user.Uid) {
+			continue
+		}
+		existsUserCount++
 		if err := userModel.RemoveUser(l, user.Uid); err != nil {
 			hasError = true
 			log.Error("UserId: " + user.Uid + " ユーザの削除に失敗しました。" + err.Error())
@@ -205,7 +208,7 @@ func action(c *cli.Context) {
 	if hasError {
 		log.Error("削除エラーになったものがあります。")
 	}
-	if existsUserCount == len(ldapUsers) {
+	if existsUserCount == 0 {
 		log.Info("削除対象のユーザはありませんでした。")
 	}
 }
