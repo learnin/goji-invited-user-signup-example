@@ -6,6 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/jinzhu/gorm"
 	"github.com/learnin/go-multilog"
 	"github.com/mattn/go-colorable"
 	"github.com/mavricknz/ldap"
@@ -183,8 +184,7 @@ func action(c *cli.Context) {
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		if err := ds.DoInTransaction(func(ds *helpers.DataSource) error {
-			tx := ds.GetTx()
+		if err := ds.DoInTransaction(func(tx *gorm.DB) error {
 			return tx.Create(&inviteUser).Error
 		}); err != nil {
 			hasError = true

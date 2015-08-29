@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/jinzhu/gorm"
 	"github.com/learnin/go-multilog"
 	"github.com/mattn/go-colorable"
 
@@ -136,13 +137,12 @@ func action(c *cli.Context) {
 
 	for i := 0; i < inviteUsersCount; i++ {
 		inviteUser := inviteUsers[i]
-		if err := ds.DoInTransaction(func(ds *helpers.DataSource) error {
+		if err := ds.DoInTransaction(func(tx *gorm.DB) error {
 			inviteUser.InviteCode = helpers.Hash(strconv.FormatInt(inviteUser.Id, 10), SALT)
 			inviteUser.Status = models.STATUS_INVITED
 			now := time.Now()
 			inviteUser.InvitedAt = now
 			inviteUser.UpdatedAt = now
-			tx := ds.GetTx()
 			if err := tx.Save(inviteUser).Error; err != nil {
 				return err
 			}

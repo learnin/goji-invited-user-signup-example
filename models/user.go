@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/mavricknz/ldap"
 
 	"github.com/learnin/goji-invited-user-signup-example/helpers"
@@ -124,8 +125,7 @@ func (user *User) AddUser(ds *helpers.DataSource, inviteUser *InviteUser) error 
 		return AlreadyExistError{"ユーザーはすでに登録されています。"}
 	}
 
-	return ds.DoInTransaction(func(ds *helpers.DataSource) error {
-		tx := ds.GetTx()
+	return ds.DoInTransaction(func(tx *gorm.DB) error {
 		now := time.Now()
 		inviteUser.Status = STATUS_SIGN_UPED
 		inviteUser.SignedUpAt = now
